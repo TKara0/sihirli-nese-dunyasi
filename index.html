@@ -87,7 +87,7 @@
 
     <div class="fixed inset-0 sparkle-bg pointer-events-none z-0"></div>
 
-    <header class="z-10 bg-white/80 backdrop-blur-md border-b border-sky-100 px-3 sm:px-6 py-3 sticky top-0 shadow-sm">
+    <header class="z-40 bg-white/80 backdrop-blur-md border-b border-sky-100 px-3 sm:px-6 py-3 sticky top-0 shadow-sm">
         <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
             <!-- Header Quick Greeting & Nickname -->
             <div class="flex flex-wrap items-center gap-2">
@@ -315,7 +315,7 @@
         </section>
 
         <section id="sec-nurse" class="tab-section hidden flex flex-col lg:flex-row gap-6">
-            <div class="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 w-full lg:w-80flex flex-col items-center text-center gap-4">
+            <div class="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 w-full lg:w-80 lg:shrink-0 flex flex-col items-center text-center gap-4">
                 <div class="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center text-5xl shadow-inner border-2 border-rose-300">
                     🧑‍⚕️
                 </div>
@@ -343,13 +343,13 @@
                 <!-- Interactive Matching Area -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-1">
                     <!-- Tools Column -->
-                    <div class="space-y-2.5">
+                    <div class="space-y-2.5 min-w-0">
                         <span class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">1. Sağlık Aletleri</span>
                         <div id="match-tools-list" class="space-y-2.5"></div>
                     </div>
 
                     <!-- Descriptions Column -->
-                    <div class="space-y-2.5">
+                    <div class="space-y-2.5 min-w-0">
                         <span class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">2. Süper Güç Açıklamaları</span>
                         <div id="match-descs-list" class="space-y-2.5"></div>
                     </div>
@@ -694,8 +694,8 @@
             shuffledTools.forEach(item => {
                 const btn = document.createElement('button');
                 btn.id = `tool-btn-${item.id}`;
-                btn.className = 'w-full p-3.5 rounded-2xl bg-slate-50 hover:bg-rose-50 border-2 border-slate-200 text-left transition flex items-center gap-3 font-bold text-slate-800 text-sm';
-                btn.innerHTML = `<span class="text-3xl">${item.emoji}</span><span>${item.name}</span>`;
+                btn.className = 'w-full p-3.5 rounded-2xl bg-slate-50 hover:bg-rose-50 border-2 border-slate-200 text-left transition flex items-center gap-3 font-bold text-slate-800 text-sm break-words';
+                btn.innerHTML = `<span class="text-3xl shrink-0">${item.emoji}</span><span class="min-w-0 break-words">${item.name}</span>`;
                 btn.onclick = () => selectMatchTool(item.id);
                 toolsList.appendChild(btn);
             });
@@ -703,7 +703,7 @@
             shuffledDescs.forEach(item => {
                 const btn = document.createElement('button');
                 btn.id = `desc-btn-${item.id}`;
-                btn.className = 'w-full p-3 rounded-2xl bg-slate-50 hover:bg-sky-50 border-2 border-slate-200 text-left transition text-xs text-slate-600 font-semibold leading-snug min-h-[64px] flex items-center';
+                btn.className = 'w-full p-3 rounded-2xl bg-slate-50 hover:bg-sky-50 border-2 border-slate-200 text-left transition text-xs text-slate-600 font-semibold leading-snug min-h-[64px] flex items-center break-words';
                 btn.innerText = item.desc;
                 btn.onclick = () => selectMatchDesc(item.id);
                 descsList.appendChild(btn);
@@ -750,11 +750,11 @@
                 matchedToolIds.add(descId);
                 selectedToolId = null;
 
-                toolEl.className = 'w-full p-3.5 rounded-2xl bg-emerald-100 border-2 border-emerald-400 text-left flex items-center justify-between font-bold text-emerald-900 text-sm opacity-90 cursor-default';
-                toolEl.innerHTML += '<span>✅</span>';
+                toolEl.className = 'w-full p-3.5 rounded-2xl bg-emerald-100 border-2 border-emerald-400 text-left flex items-center justify-between font-bold text-emerald-900 text-sm break-words opacity-90 cursor-default';
+                toolEl.innerHTML += '<span class="shrink-0">✅</span>';
 
-                descEl.className = 'w-full p-3 rounded-2xl bg-emerald-100 border-2 border-emerald-400 text-left text-xs text-emerald-900 font-bold leading-snug min-h-[64px] flex items-center justify-between gap-2 cursor-default';
-                descEl.innerHTML = `<span>${descEl.innerText}</span><span>✅</span>`;
+                descEl.className = 'w-full p-3 rounded-2xl bg-emerald-100 border-2 border-emerald-400 text-left text-xs text-emerald-900 font-bold leading-snug min-h-[64px] flex items-center justify-between gap-2 break-words cursor-default';
+                descEl.innerHTML = `<span class="min-w-0 break-words">${descEl.innerText}</span><span class="shrink-0">✅</span>`;
 
                 document.getElementById('tool-match-score').innerText = `${matchedToolIds.size} / ${healthToolsData.length} Eşleşti`;
 
