@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sihirli Neşe Dünyası - Çocuk Oyun & Keşif Merkezi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 50%, #fefce8 100%);
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+        body { overflow-x: hidden; overflow-x: clip; }
+        #germ-arena { height: 55vh; height: 55dvh; }
+        button, .memory-card, #germ-arena, canvas { user-select: none; -webkit-user-select: none; }
+        h1, h2, h3, .font-fredoka {
+            font-family: 'Fredoka', sans-serif;
+        }
+        .no-scrollbar { scrollbar-width: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .nav-fade {
+            padding-right: 2rem;
+            -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+            mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+        }
+        .tab-btn.active {
+            background-color: #ffffff;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .sparkle-bg {
+            background-image: radial-gradient(#38bdf8 1px, transparent 1px), radial-gradient(#a855f7 1px, #f8fafc 1px);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            opacity: 0.25;
+        }
+        @keyframes float-slow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+        .animate-float {
+            animation: float-slow 4s ease-in-out infinite;
+        }
+        /* Card Flip Styles */
+        .memory-card {
+            perspective: 1000px;
+        }
+        .memory-card-inner {
+            transition: transform 0.5s;
+            transform-style: preserve-3d;
+        }
+        .memory-card.flipped .memory-card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+        /* Breathing Circle Animation */
+        .breath-circle {
+            transition: transform 4s ease-in-out, background-color 4s ease-in-out;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .animate-float, .animate-bounce, .animate-spin { animation: none !important; }
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col relative">
+
+    <div class="fixed inset-0 sparkle-bg pointer-events-none z-0"></div>
+
+    <header class="z-10 bg-white/80 backdrop-blur-md border-b border-sky-100 px-3 sm:px-6 py-3 sticky top-0 shadow-sm">
+        <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <!-- Header Quick Greeting & Nickname -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center bg-sky-50 border border-sky-200 rounded-2xl px-3 py-1 gap-2 shadow-sm">
+                    <span class="text-sm">🌟</span>
+                    <input type="text" id="hero-nickname-input" placeholder="Takma Adın..." maxlength="15"
+                           onchange="updateHeroName(this.value)"
+                           aria-label="Takma ad"
+                           class="bg-transparent text-base sm:text-xs font-bold text-sky-900 w-28 sm:w-32 min-w-0 focus:outline-none placeholder:text-sky-400">
+                    <button onclick="updateHeroName(document.getElementById('hero-nickname-input').value)" class="text-xs bg-sky-500 text-white px-3 py-1.5 min-h-[32px] rounded-lg font-bold">Kaydet</button>
+                </div>
+                <div id="mascot-bubble" class="bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold px-3 py-1.5 rounded-2xl hidden md:flex items-center gap-2 shadow-sm min-w-0">
+                    <span class="text-lg">🩺</span>
+                    <span id="mascot-text" class="truncate max-w-md">"Merhaba yıldız dostum! Bugün nasıl hissediyorsun?"</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-6 relative z-10 flex flex-col gap-6">
+        <nav class="flex items-center justify-start gap-2 overflow-x-auto pb-2 no-scrollbar nav-fade">
+            <button onclick="switchTab('emotion')" id="tab-emotion" class="tab-btn active flex items-center gap-2 px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base rounded-2xl font-bold text-slate-700 bg-white/60 hover:bg-white transition border border-slate-200/60 whitespace-nowrap">
+                <span class="p-1.5 bg-amber-100 text-amber-600 rounded-xl"><i data-lucide="smile" class="w-5 h-5"></i></span>
+                Bugün Nasılsın?
+            </button>
+            <button onclick="switchTab('breath')" id="tab-breath" class="tab-btn flex items-center gap-2 px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base rounded-2xl font-bold text-slate-700 bg-white/60 hover:bg-white transition border border-slate-200/60 whitespace-nowrap">
+                <span class="p-1.5 bg-cyan-100 text-cyan-600 rounded-xl"><i data-lucide="wind" class="w-5 h-5"></i></span>
+                Sihirli Nefes
+            </button>
+            <button onclick="switchTab('germs')" id="tab-germs" class="tab-btn flex items-center gap-2 px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base rounded-2xl font-bold text-slate-700 bg-white/60 hover:bg-white transition border border-slate-200/60 whitespace-nowrap">
+                <span class="p-1.5 bg-emerald-100 text-emerald-600 rounded-xl"><i data-lucide="shield-check" class="w-5 h-5"></i></span>
+                Mikrop Avcısı
+            </button>
+            <button onclick="switchTab('cards')" id="tab-cards" class="tab-btn flex items-center gap-2 px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base rounded-2xl font-bold text-slate-700 bg-white/60 hover:bg-white transition border border-slate-200/60 whitespace-nowrap">
+                <span class="p-1.5 bg-sky-100 text-sky-600 rounded-xl"><i data-lucide="grid" class="w-5 h-5"></i></span>
+                Eşleştirme Oyunu
+            </button>
+            <button onclick="switchTab('canvas')" id="tab-canvas" class="tab-btn flex items-center gap-2 px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base rounded-2xl font-bold text-slate-700 bg-white/60 hover:bg-white transition border border-slate-200/60 whitespace-nowrap">
+                <span class="p-1.5 bg-pink-100 text-pink-600 rounded-xl"><i data-lucide="palette" class="w-5 h-5"></i></span>
+                Sihirli Tuval
+            </button>
+            <button onclick="switchTab('music')" id="tab-music" class="tab-btn flex items-center gap-2 px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base rounded-2xl font-bold text-slate-700 bg-white/60 hover:bg-white transition border border-slate-200/60 whitespace-nowrap">
+                <span class="p-1.5 bg-indigo-100 text-indigo-600 rounded-xl"><i data-lucide="music" class="w-5 h-5"></i></span>
+                Şifa Melodileri
+            </button>
+            <button onclick="switchTab('nurse')" id="tab-nurse" class="tab-btn flex items-center gap-2 px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base rounded-2xl font-bold text-slate-700 bg-white/60 hover:bg-white transition border border-slate-200/60 whitespace-nowrap">
+                <span class="p-1.5 bg-rose-100 text-rose-600 rounded-xl"><i data-lucide="stethoscope" class="w-5 h-5"></i></span>
+                Sağlık Aletleri
+            </button>
+            <button onclick="switchTab('story')" id="tab-story" class="tab-btn flex items-center gap-2 px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base rounded-2xl font-bold text-slate-700 bg-white/60 hover:bg-white transition border border-slate-200/60 whitespace-nowrap">
+                <span class="p-1.5 bg-purple-100 text-purple-600 rounded-xl"><i data-lucide="sparkles" class="w-5 h-5"></i></span>
+                Sihirli Masal Fabrikası
+            </button>
+            <button onclick="switchTab('wishes')" id="tab-wishes" class="tab-btn flex items-center gap-2 px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base rounded-2xl font-bold text-slate-700 bg-white/60 hover:bg-white transition border border-slate-200/60 whitespace-nowrap">
+                <span class="p-1.5 bg-yellow-100 text-yellow-600 rounded-xl"><i data-lucide="star" class="w-5 h-5"></i></span>
+                Dilek Kavanozu
+            </button>
+            <button onclick="switchTab('badges')" id="tab-badges" class="tab-btn flex items-center gap-2 px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base rounded-2xl font-bold text-slate-700 bg-white/60 hover:bg-white transition border border-slate-200/60 whitespace-nowrap">
+                <span class="p-1.5 bg-amber-100 text-amber-600 rounded-xl"><i data-lucide="award" class="w-5 h-5"></i></span>
+                Rozetlerim <span id="badge-count" class="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full font-extrabold">1</span>
+            </button>
+        </nav>
+
+        <section id="sec-emotion" class="tab-section flex flex-col gap-6">
+            <div class="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 text-center">
+                <h2 class="font-bold text-2xl text-slate-800 flex items-center justify-center gap-2">
+                    <i data-lucide="heart" class="text-rose-500 w-7 h-7"></i>
+                    Bugün Kendini Nasıl Hissediyorsun?
+                </h2>
+                <p class="text-sm text-slate-500 mt-1">Sana en uygun yüz ifadesine tıkla, sihirli mesajını al!</p>
+
+                <!-- Emotion Expressions Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mt-6">
+                    <button onclick="selectEmotion('happy', 'Süper Enerjik!', '😀', 'Bugün içindeki neşe etrafa ışık saçıyor! Oyun oynamaya ve keşfetmeye tam hazırsın!')"
+                            class="p-4 rounded-3xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 transition transform hover:-translate-y-1 flex flex-col items-center">
+                        <span class="text-5xl mb-2">😀</span>
+                        <span class="font-bold text-amber-900 text-sm">Harika</span>
+                    </button>
+                    <button onclick="selectEmotion('brave', 'Çok Cesur!', '🦁', 'Süper bir cesaret kalkanına sahipsin! Bugün başaramayacağın hiçbir şey yok!')"
+                            class="p-4 rounded-3xl bg-orange-50 hover:bg-orange-100 border-2 border-orange-200 transition transform hover:-translate-y-1 flex flex-col items-center">
+                        <span class="text-5xl mb-2">🦁</span>
+                        <span class="font-bold text-orange-900 text-sm">Cesur</span>
+                    </button>
+                    <button onclick="selectEmotion('tired', 'Biraz Dinlenmeli', '😴', 'Bedeni dinlendirmek de bir süper güçtür! İster sakince çizim yap, ister masal dinle.')"
+                            class="p-4 rounded-3xl bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-200 transition transform hover:-translate-y-1 flex flex-col items-center">
+                        <span class="text-5xl mb-2">😴</span>
+                        <span class="font-bold text-indigo-900 text-sm">Yorgun</span>
+                    </button>
+                    <button onclick="selectEmotion('worried', 'Sıcacık Bir Sarılma', '🤗', 'Endişelenmek çok normal! Sağlık dostların ve neşeli oyunlar her zaman yanında.')"
+                            class="p-4 rounded-3xl bg-sky-50 hover:bg-sky-100 border-2 border-sky-200 transition transform hover:-translate-y-1 flex flex-col items-center">
+                        <span class="text-5xl mb-2">😟</span>
+                        <span class="font-bold text-sky-900 text-sm">Endişeli</span>
+                    </button>
+                    <button onclick="selectEmotion('creative', 'Hayal Gücü Yüksek!', '🎨', 'İçinde harika fikirler uçuşuyor! Hemen Sihirli Tuval tabına geçip resim çizmelisin!')"
+                            class="p-4 rounded-3xl bg-pink-50 hover:bg-pink-100 border-2 border-pink-200 transition transform hover:-translate-y-1 flex flex-col items-center">
+                        <span class="text-5xl mb-2">🤩</span>
+                        <span class="font-bold text-pink-900 text-sm">Yaratıcı</span>
+                    </button>
+                    <button onclick="selectEmotion('calm', 'Huzurlu ve Sakin', '🧘', 'Dingin bir deniz gibisin. Sakin müzikler dinlemek veya hafıza kartları oynamak harika gelebilir.')"
+                            class="p-4 rounded-3xl bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 transition transform hover:-translate-y-1 flex flex-col items-center">
+                        <span class="text-5xl mb-2">😌</span>
+                        <span class="font-bold text-emerald-900 text-sm">Sakin</span>
+                    </button>
+                </div>
+
+                <!-- Selected Emotion Feedback Box -->
+                <div id="emotion-result" class="mt-6 p-5 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 text-white flex items-center gap-4 shadow-md text-left">
+                    <span id="emotion-emoji" class="text-5xl">🌟</span>
+                    <div>
+                        <h3 id="emotion-title" class="font-bold text-lg">Duygunu Seç!</h3>
+                        <p id="emotion-desc" class="text-xs sm:text-sm text-sky-100 font-medium">Yukarıdaki sevimli ifadelerden birine dokunarak bugün nasıl hissettiğini bizimle paylaşabilirsin.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-germs" class="tab-section hidden flex flex-col gap-4">
+            <div class="bg-white p-4 rounded-3xl shadow-lg border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                        <i data-lucide="sparkles" class="text-emerald-500 w-5 h-5"></i>
+                        Sihirli Sabun ile Mikropları Temizle!
+                    </h2>
+                    <p class="text-xs text-slate-500">Ekranda çıkan yaramaz mikroplara tıklayarak köpükle yok et!</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-2xl text-center">
+                        <span class="text-xs font-bold text-emerald-600 block">PUAN</span>
+                        <span id="germ-score" class="text-xl font-black text-emerald-800">0</span>
+                    </div>
+                    <button onclick="resetGermGame()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-2xl text-xs transition">
+                        Yeniden Başlat
+                    </button>
+                </div>
+            </div>
+
+            <!-- Germ Game Arena -->
+            <div id="germ-arena" class="relative w-full h-[55dvh] min-h-[300px] max-h-[480px] touch-manipulation bg-gradient-to-b from-sky-100 via-teal-50 to-emerald-100 rounded-3xl border-2 border-dashed border-emerald-300 overflow-hidden cursor-crosshair">
+                <div id="germ-welcome" class="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+                    <span class="text-6xl mb-3">🧼</span>
+                    <h3 class="font-bold text-slate-700 text-lg">Mikrop Temizleme Operasyonu</h3>
+                    <p class="text-xs text-slate-500 max-w-sm mt-1">Başla butonuna tıkla, 15 saniyede toplayabildiğin kadar mikrobu sabunla yok et!</p>
+                    <button onclick="startGermGame()" class="mt-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-3 rounded-2xl text-sm shadow-md transition transform active:scale-95">
+                        Oyunu Başlat 🚀
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-cards" class="tab-section hidden flex flex-col gap-4">
+            <div class="bg-white p-4 rounded-3xl shadow-lg border border-slate-100 flex items-center justify-between">
+                <div>
+                    <h2 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                        <i data-lucide="grid" class="text-sky-500 w-5 h-5"></i>
+                        Hastane Hafıza Kartları
+                    </h2>
+                    <p class="text-xs text-slate-500">Kartları çevir, aynı sağlık sembollerini eşleştir!</p>
+                </div>
+                <button onclick="initCardGame()" class="bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-2 rounded-2xl text-xs transition">
+                    Kartları Karıştır 🔄
+                </button>
+            </div>
+
+            <div id="card-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 max-w-2xl mx-auto w-full p-2">
+                <!-- Cards dynamically generated via JS -->
+            </div>
+        </section>
+
+        <section id="sec-canvas" class="tab-section hidden flex flex-col lg:flex-row gap-4 items-start">
+            <div class="bg-white p-4 rounded-3xl shadow-lg border border-slate-100 w-full lg:w-64 flex flex-col gap-4">
+                <h2 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                    <i data-lucide="paintbrush" class="text-pink-500 w-5 h-5"></i>
+                    Çizim Araçları
+                </h2>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Fırça Tipi</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setTool('pen')" id="tool-pen" class="tool-btn min-h-[44px] bg-pink-50 text-pink-700 border-2 border-pink-400 p-2 rounded-2xl text-sm lg:text-xs whitespace-nowrap font-bold flex items-center gap-2 justify-center">
+                            ✏️ Normal
+                        </button>
+                        <button onclick="setTool('rainbow')" id="tool-rainbow" class="tool-btn min-h-[44px] bg-slate-50 text-slate-700 border-2 border-transparent p-2 rounded-2xl text-sm lg:text-xs whitespace-nowrap font-bold flex items-center gap-2 justify-center">
+                            🌈 Gökkuşağı
+                        </button>
+                        <button onclick="setTool('glow')" id="tool-glow" class="tool-btn min-h-[44px] bg-slate-50 text-slate-700 border-2 border-transparent p-2 rounded-2xl text-sm lg:text-xs whitespace-nowrap font-bold flex items-center gap-2 justify-center">
+                            ✨ Sihirli
+                        </button>
+                        <button onclick="setTool('eraser')" id="tool-eraser" class="tool-btn min-h-[44px] bg-slate-50 text-slate-700 border-2 border-transparent p-2 rounded-2xl text-sm lg:text-xs whitespace-nowrap font-bold flex items-center gap-2 justify-center">
+                            🧹 Silgi
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Renk Seç</label>
+                    <div class="grid grid-cols-5 gap-2 justify-items-center">
+                        <button onclick="setColor('#f43f5e')" data-color="#f43f5e" aria-label="Kırmızı" class="w-10 h-10 rounded-full bg-rose-500 ring-2 ring-offset-1 ring-rose-300"></button>
+                        <button onclick="setColor('#3b82f6')" data-color="#3b82f6" aria-label="Mavi" class="w-10 h-10 rounded-full bg-blue-500 ring-2 ring-offset-1 ring-blue-300"></button>
+                        <button onclick="setColor('#10b981')" data-color="#10b981" aria-label="Yeşil" class="w-10 h-10 rounded-full bg-emerald-500 ring-2 ring-offset-1 ring-emerald-300"></button>
+                        <button onclick="setColor('#f59e0b')" data-color="#f59e0b" aria-label="Sarı" class="w-10 h-10 rounded-full bg-amber-500 ring-2 ring-offset-1 ring-amber-300"></button>
+                        <button onclick="setColor('#8b5cf6')" data-color="#8b5cf6" aria-label="Mor" class="w-10 h-10 rounded-full bg-purple-500 ring-2 ring-offset-1 ring-purple-300"></button>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Sağlık & Neşe Damgaları</label>
+                    <div class="grid grid-cols-4 gap-2 text-xl bg-slate-50 p-2 rounded-2xl border border-slate-200">
+                        <button onclick="setStamp('🩺')" class="hover:bg-white p-1 rounded-xl min-h-[44px] text-2xl">🩺</button>
+                        <button onclick="setStamp('🩹')" class="hover:bg-white p-1 rounded-xl min-h-[44px] text-2xl">🩹</button>
+                        <button onclick="setStamp('⭐')" class="hover:bg-white p-1 rounded-xl min-h-[44px] text-2xl">⭐</button>
+                        <button onclick="setStamp('💖')" class="hover:bg-white p-1 rounded-xl min-h-[44px] text-2xl">💖</button>
+                    </div>
+                </div>
+                <div class="pt-2 flex gap-2">
+                    <button onclick="clearCanvas()" class="flex-1 min-h-[44px] bg-rose-50 text-rose-600 font-bold py-2 rounded-2xl text-sm">Temizle</button>
+                    <button onclick="downloadCanvas()" class="flex-1 min-h-[44px] bg-sky-500 text-white font-bold py-2 rounded-2xl text-sm shadow-sm">Kaydet</button>
+                </div>
+                </div>
+            </div>
+
+            <div class="flex-1 bg-white p-3 rounded-3xl shadow-lg border border-slate-100 w-full flex flex-col items-center">
+                <div class="relative w-full aspect-[4/3] max-h-[480px] rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden bg-white touch-none">
+                    <canvas id="paintCanvas" class="w-full h-full cursor-crosshair"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-nurse" class="tab-section hidden flex flex-col lg:flex-row gap-6">
+            <div class="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 w-full lg:w-80flex flex-col items-center text-center gap-4">
+                <div class="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center text-5xl shadow-inner border-2 border-rose-300">
+                    🧑‍⚕️
+                </div>
+                <div>
+                    <h2 class="font-bold text-xl text-slate-800">Sağlık Aletleri Eşleştirme</h2>
+                    <p class="text-xs text-rose-600 font-semibold mt-0.5">Süper Güçleri Keşfet & Eşleştir!</p>
+                </div>
+                <div class="w-full bg-rose-50 border border-rose-100 rounded-2xl p-3 text-xs text-slate-600 font-medium">
+                    "Önce soldan bir sağlık aletine dokun, sonra sağdan onun ne işe yaradığını anlatan açıklamayı seç!"
+                </div>
+                <button onclick="initToolMatchGame()" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-2xl text-xs shadow-sm transition">
+                    Oyunu Karıştır 🔄
+                </button>
+            </div>
+
+            <div class="flex-1 bg-white p-6 rounded-3xl shadow-lg border border-slate-100 flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                        <i data-lucide="sparkles" class="text-amber-500 w-5 h-5"></i>
+                        Aleti Seç, Açıklamasıyla Eşleştir!
+                    </h3>
+                    <span id="tool-match-score" class="bg-rose-100 text-rose-700 font-extrabold text-xs px-3 py-1 rounded-full">0 / 4 Eşleşti</span>
+                </div>
+
+                <!-- Interactive Matching Area -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-1">
+                    <!-- Tools Column -->
+                    <div class="space-y-2.5">
+                        <span class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">1. Sağlık Aletleri</span>
+                        <div id="match-tools-list" class="space-y-2.5"></div>
+                    </div>
+
+                    <!-- Descriptions Column -->
+                    <div class="space-y-2.5">
+                        <span class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">2. Süper Güç Açıklamaları</span>
+                        <div id="match-descs-list" class="space-y-2.5"></div>
+                    </div>
+                </div>
+
+                <div id="nurse-dialog" class="mt-auto bg-slate-900 text-white p-4 rounded-2xl flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">🧑‍⚕️</span>
+                        <p id="nurse-speech-text" class="text-xs sm:text-sm font-medium">Sol taraftan bir alete tıklayarak eşleştirmeye başla!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-story" class="tab-section hidden flex flex-col lg:flex-row gap-6">
+            <div class="bg-white p-5 rounded-3xl shadow-lg border border-slate-100 w-full lg:w-96 flex flex-col gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="text-3xl p-2 bg-purple-100 rounded-2xl">✨</div>
+                    <div>
+                        <h2 class="font-bold text-lg text-slate-800">Sihirli Masal Fabrikası</h2>
+                        <p class="text-xs text-slate-500">Kendi macera dünyanı sen tasarla!</p>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Masal Yıldızının Adı</label>
+                    <input type="text" id="story-hero" placeholder="Örn: Zeynep / Mert" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 text-base sm:text-sm font-semibold focus:outline-none">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Sihirli Yardımcı Arkadaş</label>
+                    <select id="story-companion" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 text-base sm:text-sm font-semibold focus:outline-none">
+                        <option value="Uçan Ejderha Bip">Uçan Ejderha Bip 🐉</option>
+                        <option value="Sihirli Robot Robi">Sihirli Robot Robi 🤖</option>
+                        <option value="Gökkuşağı Kedisi Mia">Gökkuşağı Kedisi Mia 🐱</option>
+                        <option value="Cesur Uzay Yolu Tavşanı">Uzay Tavşanı Pofu 🐰</option>
+                    </select>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Macera Mekanı</label>
+                    <select id="story-world" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 text-base sm:text-sm font-semibold focus:outline-none">
+                        <option value="Bulutların Üstündeki Şato">Bulut Şatosu ☁️</option>
+                        <option value="Kristal Işık Ormanı">Kristal Işık Ormanı 🌲</option>
+                        <option value="Yıldızlar Arası Galaksi Krallığı">Galaksi Krallığı 🚀</option>
+                        <option value="Sualtı Şifa Sarayı">Sualtı Sarayı 🧜‍♂️</option>
+                    </select>
+                </div>
+
+                <button onclick="generateDynamicStory()" class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold py-3 rounded-2xl text-sm shadow-md transition transform active:scale-95">
+                    🚀 Sihirli Masalımı Üret!
+                </button>
+            </div>
+
+            <div class="flex-1 bg-white p-6 rounded-3xl shadow-lg border border-slate-100 flex flex-col relative min-h-[340px]">
+                <h3 id="story-title" class="text-lg font-bold text-indigo-900 pb-3 border-b border-slate-100">
+                    🌟 Hayal Masalın Hazırlanıyor...
+                </h3>
+                <div id="story-content" class="my-4 text-slate-700 text-base leading-relaxed space-y-3">
+                    <p class="text-slate-400 italic">Sol taraftan seçimlerini yap ve 'Sihirli Masalımı Üret' butonuna tıkla! Sana özel unutulmaz bir macera yazılsın. ✨</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-badges" class="tab-section hidden flex flex-col items-center">
+            <div class="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 w-full max-w-3xl">
+                <div class="text-center mb-6">
+                    <h2 class="font-bold text-xl text-slate-800">🏆 Sağlık ve Cesaret Rozetlerin</h2>
+                    <p class="text-xs text-slate-500 mt-1">Uygulamadaki sevimli etkinlikleri tamamladıkça rozetler açılır!</p>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div id="badge-brave" class="p-4 rounded-3xl bg-amber-50 border border-amber-200 flex flex-col items-center text-center shadow-sm">
+                        <span class="text-4xl mb-2">⭐</span>
+                        <h3 class="font-bold text-sm text-amber-900">Cesur Kaşif</h3>
+                        <p class="text-[11px] text-amber-700 mt-1">Sihirli Dünyaya adım attın!</p>
+                    </div>
+                    <div id="badge-emotion" class="opacity-40 grayscale transition-all p-4 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center">
+                        <span class="text-4xl mb-2">🤗</span>
+                        <h3 class="font-bold text-sm text-slate-800">Duygu Dostu</h3>
+                        <p class="text-[11px] text-slate-500 mt-1">Bugünkü hislerini bizimle paylaştın!</p>
+                    </div>
+                    <div id="badge-germs" class="opacity-40 grayscale transition-all p-4 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center">
+                        <span class="text-4xl mb-2">🧼</span>
+                        <h3 class="font-bold text-sm text-slate-800">Mikrop Savaşçısı</h3>
+                        <p class="text-[11px] text-slate-500 mt-1">Sabunla mikropları temizledin!</p>
+                    </div>
+                    <div id="badge-cards" class="opacity-40 grayscale transition-all p-4 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center">
+                        <span class="text-4xl mb-2">🧩</span>
+                        <h3 class="font-bold text-sm text-slate-800">Hafıza Ustası</h3>
+                        <p class="text-[11px] text-slate-500 mt-1">Hafıza kartlarını eşleştirdin!</p>
+                    </div>
+                    <div id="badge-artist" class="opacity-40 grayscale transition-all p-4 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center">
+                        <span class="text-4xl mb-2">🎨</span>
+                        <h3 class="font-bold text-sm text-slate-800">Sihirli Sanatçı</h3>
+                        <p class="text-[11px] text-slate-500 mt-1">Tuvalde ilk resmini yaptın!</p>
+                    </div>
+                    <div id="badge-breath" class="opacity-40 grayscale transition-all p-4 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center">
+                        <span class="text-4xl mb-2">🎈</span>
+                        <h3 class="font-bold text-sm text-slate-800">Nefes Ustası</h3>
+                        <p class="text-[11px] text-slate-500 mt-1">Sihirli balon nefesini tamamladın!</p>
+                    </div>
+                    <div id="badge-tools" class="opacity-40 grayscale transition-all p-4 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center">
+                        <span class="text-4xl mb-2">🩺</span>
+                        <h3 class="font-bold text-sm text-slate-800">Sağlık Kaşifi</h3>
+                        <p class="text-[11px] text-slate-500 mt-1">Tüm sağlık aletlerini eşleştirdin!</p>
+                    </div>
+                    <div id="badge-music" class="opacity-40 grayscale transition-all p-4 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center">
+                        <span class="text-4xl mb-2">🎵</span>
+                        <h3 class="font-bold text-sm text-slate-800">Melodi Ustası</h3>
+                        <p class="text-[11px] text-slate-500 mt-1">Kendi şifa melodini besteledin!</p>
+                    </div>
+                    <div id="badge-wishes" class="opacity-40 grayscale transition-all p-4 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center">
+                        <span class="text-4xl mb-2">🌠</span>
+                        <h3 class="font-bold text-sm text-slate-800">Umut Yıldızı</h3>
+                        <p class="text-[11px] text-slate-500 mt-1">Dilek kavanozuna yıldız ekledin!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MUSIC XYLOPHONE SECTION -->
+        <section id="sec-music" class="tab-section hidden flex flex-col items-center">
+            <div class="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 w-full max-w-4xl text-center flex flex-col gap-6">
+                <div>
+                    <h2 class="font-bold text-2xl text-slate-800 flex items-center justify-center gap-2">
+                        <i data-lucide="music" class="text-indigo-500 w-7 h-7"></i>
+                        Şifa Melodileri - Sihirli Ksilofon
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Renkli tuşlara dokunarak kendi neşeli müziğini bestele veya hazır ninniyi dinle!</p>
+                </div>
+
+                <!-- Xylophone Bars -->
+                <div class="grid grid-cols-8 gap-1 sm:gap-3 items-end h-48 sm:h-56 px-2 py-4 bg-slate-50 rounded-3xl border border-slate-200">
+                    <button onclick="playNote(261.63, 'Do', this)" class="h-full bg-rose-400 hover:bg-rose-500 active:scale-95 text-white font-extrabold rounded-2xl shadow-md transition flex flex-col justify-between items-center py-2 sm:py-3 text-[10px] sm:text-base">
+                        <span class="w-3 h-3 rounded-full bg-white/60"></span><span>DO</span><span class="w-3 h-3 rounded-full bg-white/60"></span>
+                    </button>
+                    <button onclick="playNote(293.66, 'Re', this)" class="h-[93%] bg-orange-400 hover:bg-orange-500 active:scale-95 text-white font-extrabold rounded-2xl shadow-md transition flex flex-col justify-between items-center py-2 sm:py-3 text-[10px] sm:text-base">
+                        <span class="w-3 h-3 rounded-full bg-white/60"></span><span>RE</span><span class="w-3 h-3 rounded-full bg-white/60"></span>
+                    </button>
+                    <button onclick="playNote(329.63, 'Mi', this)" class="h-[86%] bg-amber-400 hover:bg-amber-500 active:scale-95 text-white font-extrabold rounded-2xl shadow-md transition flex flex-col justify-between items-center py-2 sm:py-3 text-[10px] sm:text-base">
+                        <span class="w-3 h-3 rounded-full bg-white/60"></span><span>Mİ</span><span class="w-3 h-3 rounded-full bg-white/60"></span>
+                    </button>
+                    <button onclick="playNote(349.23, 'Fa', this)" class="h-[79%] bg-emerald-400 hover:bg-emerald-500 active:scale-95 text-white font-extrabold rounded-2xl shadow-md transition flex flex-col justify-between items-center py-2 sm:py-3 text-[10px] sm:text-base">
+                        <span class="w-3 h-3 rounded-full bg-white/60"></span><span>FA</span><span class="w-3 h-3 rounded-full bg-white/60"></span>
+                    </button>
+                    <button onclick="playNote(392.00, 'Sol', this)" class="h-[72%] bg-teal-400 hover:bg-teal-500 active:scale-95 text-white font-extrabold rounded-2xl shadow-md transition flex flex-col justify-between items-center py-2 sm:py-3 text-[10px] sm:text-base">
+                        <span class="w-3 h-3 rounded-full bg-white/60"></span><span>SOL</span><span class="w-3 h-3 rounded-full bg-white/60"></span>
+                    </button>
+                    <button onclick="playNote(440.00, 'La', this)" class="h-[65%] bg-sky-400 hover:bg-sky-500 active:scale-95 text-white font-extrabold rounded-2xl shadow-md transition flex flex-col justify-between items-center py-2 sm:py-3 text-[10px] sm:text-base">
+                        <span class="w-3 h-3 rounded-full bg-white/60"></span><span>LA</span><span class="w-3 h-3 rounded-full bg-white/60"></span>
+                    </button>
+                    <button onclick="playNote(493.88, 'Si', this)" class="h-[58%] bg-indigo-400 hover:bg-indigo-500 active:scale-95 text-white font-extrabold rounded-2xl shadow-md transition flex flex-col justify-between items-center py-2 sm:py-3 text-[10px] sm:text-base">
+                        <span class="w-3 h-3 rounded-full bg-white/60"></span><span>Sİ</span><span class="w-3 h-3 rounded-full bg-white/60"></span>
+                    </button>
+                    <button onclick="playNote(523.25, 'Do+', this)" class="h-[52%] bg-purple-400 hover:bg-purple-500 active:scale-95 text-white font-extrabold rounded-2xl shadow-md transition flex flex-col justify-between items-center py-2 sm:py-3 text-[10px] sm:text-base">
+                        <span class="w-3 h-3 rounded-full bg-white/60"></span><span>DO+</span><span class="w-3 h-3 rounded-full bg-white/60"></span>
+                    </button>
+                </div>
+
+                <!-- Melody Recorder & Presets -->
+                <div class="flex flex-wrap items-center justify-center gap-3">
+                    <button onclick="playSampleSong('star')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold px-4 py-2.5 rounded-2xl text-xs transition">
+                        ⭐ Parılda Küçük Yıldız Çal
+                    </button>
+                    <button onclick="replayUserMelody()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 py-2.5 rounded-2xl text-xs shadow-sm transition">
+                        ▶️ Kendi Bestemi Dinle (<span id="recorded-count">0</span> Nota)
+                    </button>
+                    <button onclick="clearUserMelody()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2.5 rounded-2xl text-xs transition">
+                        Temizle
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- GRATITUDE & WISH JAR SECTION -->
+        <section id="sec-wishes" class="tab-section hidden flex flex-col items-center">
+            <div class="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 w-full max-w-3xl flex flex-col gap-6">
+                <div class="text-center">
+                    <h2 class="font-bold text-2xl text-slate-800 flex items-center justify-center gap-2">
+                        <i data-lucide="star" class="text-amber-500 w-7 h-7"></i>
+                        Sihirli Dilek & Mutluluk Kavanozu
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Bugün seni gülümseten bir şeyi veya iyileşince yapmak istediğin bir hayalini yıldız yapıp kavanoza at!</p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <input type="text" id="wish-input" placeholder="Örn: İyileşince parkta dondurma yiyeceğim..." maxlength="80"
+                           class="flex-1 bg-amber-50/60 border-2 border-amber-200 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-amber-400">
+                    <button onclick="addWishStar()" class="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold px-6 py-3 rounded-2xl text-sm shadow-md transition transform active:scale-95 whitespace-nowrap">
+                        ✨ Yıldız Olarak Ekle
+                    </button>
+                </div>
+
+                <!-- Quick Wish Ideas -->
+                <div class="flex flex-wrap gap-2 items-center">
+                    <span class="text-xs font-bold text-slate-400">Hızlı Fikirler:</span>
+                    <button onclick="fillWish('Bugün çok cesurdum! 🦁')" class="text-xs bg-slate-100 hover:bg-amber-100 text-slate-700 font-semibold px-3 py-1 rounded-full transition">+ Bugün çok cesurdum</button>
+                    <button onclick="fillWish('Ailemi çok seviyorum ❤️')" class="text-xs bg-slate-100 hover:bg-amber-100 text-slate-700 font-semibold px-3 py-1 rounded-full transition">+ Ailemi çok seviyorum</button>
+                    <button onclick="fillWish('En sevdiğim oyunu oynayacağım 🎮')" class="text-xs bg-slate-100 hover:bg-amber-100 text-slate-700 font-semibold px-3 py-1 rounded-full transition">+ En sevdiğim oyunu oynayacağım</button>
+                </div>
+
+                <!-- Visual Jar Display -->
+                <div class="bg-gradient-to-b from-indigo-950 via-purple-900 to-slate-900 rounded-3xl p-6 min-h-[220px] border-4 border-amber-300/60 shadow-inner relative overflow-hidden">
+                    <div id="wish-jar-container" class="flex flex-wrap gap-3 justify-center items-center">
+                        <div class="bg-white/15 backdrop-blur-sm border border-white/25 text-amber-200 px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 animate-float">
+                            <span>⭐</span> <span>Her yeni gün daha da güçleniyorum!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BREATHING EXERCISE SECTION -->
+        <section id="sec-breath" class="tab-section hidden flex flex-col items-center">
+            <div class="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 w-full max-w-2xl text-center flex flex-col items-center gap-6">
+                <div>
+                    <h2 class="font-bold text-2xl text-slate-800 flex items-center justify-center gap-2">
+                        <i data-lucide="wind" class="text-cyan-500 w-7 h-7"></i>
+                        Sihirli Balon Nefesi
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Kendini sakinleştirmek ve süper güç toplamak için balonu takip et!</p>
+                </div>
+
+                <!-- Interactive Breathing Balloon -->
+                <div class="relative w-64 h-64 flex items-center justify-center my-2">
+                    <div class="absolute inset-0 rounded-full border-4 border-dashed border-cyan-200 animate-spin" style="animation-duration: 20s;"></div>
+                    <div id="breath-balloon" class="breath-circle w-28 h-28 rounded-full bg-gradient-to-tr from-cyan-400 to-sky-500 shadow-xl flex flex-col items-center justify-center text-white p-4">
+                        <span id="breath-emoji" class="text-3xl mb-1">🎈</span>
+                        <span id="breath-instruction" class="font-bold text-sm tracking-wide">Hazır mısın?</span>
+                    </div>
+                </div>
+
+                <div class="bg-cyan-50 border border-cyan-100 rounded-2xl p-4 w-full max-w-md">
+                    <p id="breath-subtext" class="text-xs sm:text-sm font-bold text-cyan-900">
+                        Burnundan derin bir nefes alırken balonun büyümesini izle, ağzından üflerken balonun küçülmesini takip et!
+                    </p>
+                </div>
+
+                <div class="flex gap-3">
+                    <button id="btn-breath-start" onclick="toggleBreathing()" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold px-8 py-3 rounded-2xl text-sm shadow-md transition transform active:scale-95">
+                        Egzersizi Başlat 🌬️
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="mt-auto py-4 text-center text-xs text-slate-400 font-medium">
+        Sevgi, Cesaret ve Sağlıkla Tasarlandı ❤️ Sihirli Neşe Dünyası
+    </footer>
+
+    <!-- Ortak kutlama penceresi -->
+    <div id="celebration-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="celebration-title">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm text-center flex flex-col items-center gap-3">
+            <span id="celebration-emoji" class="text-6xl"></span>
+            <h3 id="celebration-title" class="font-bold text-2xl text-slate-800"></h3>
+            <p id="celebration-text" class="text-base text-slate-600 font-semibold"></p>
+            <button id="celebration-ok" onclick="closeCelebration()" class="mt-2 min-h-[48px] px-10 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-base shadow-md transition transform active:scale-95">Tamam</button>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let currentTab = 'emotion';
+        let unlockedBadges = new Set(['brave']);
+        let heroNickname = 'Yıldız Dostum';
+
+        function updateHeroName(name) {
+            const trimmed = name.trim();
+            heroNickname = trimmed || 'Yıldız Dostum';
+            document.getElementById('mascot-text').innerText = `"Merhaba ${heroNickname}! Bugün nasıl hissediyorsun?"`;
+            // Auto fill story hero input if empty
+            const storyHeroInput = document.getElementById('story-hero');
+            if (storyHeroInput && trimmed) {
+                storyHeroInput.value = trimmed;
+            }
+        }
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-section').forEach(sec => sec.classList.add('hidden'));
+
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            const activeSec = document.getElementById(`sec-${tabId}`);
+            if (activeBtn) activeBtn.classList.add('active');
+            if (activeSec) activeSec.classList.remove('hidden');
+
+            if (tabId === 'canvas') resizeCanvas();
+            if (tabId === 'cards') initCardGame();
+            if (tabId === 'nurse') initToolMatchGame();
+            if (tabId !== 'breath' && isBreathing) stopBreathing();
+            if (tabId !== 'germs' && (germTimer || germEndTimer)) resetGermGame();
+            if (activeBtn) activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+        }
+
+        /* --- HEALTH TOOLS MATCHING GAME LOGIC --- */
+        const healthToolsData = [
+            {
+                id: 'steteskop',
+                name: 'Steteskop',
+                emoji: '🩺',
+                desc: 'Kalbinin neşeli ritmini ve nefesini şarkı gibi dinleyen sihirli kulaklık!'
+            },
+            {
+                id: 'asi',
+                name: 'Aşı Kalkanı',
+                emoji: '💉',
+                desc: 'Vücudundaki koruyucu süper askerleri uyandırıp görünmez kalkan oluşturur!'
+            },
+            {
+                id: 'ates',
+                name: 'Derece Metre',
+                emoji: '🌡️',
+                desc: 'Işık hızıyla alnına dokunup vücut sıcaklığını ölçer, hiç acıtmaz!'
+            },
+            {
+                id: 'yara',
+                name: 'Desenli Bantlar',
+                emoji: '🩹',
+                desc: 'Rengarenk desenleriyle minik çizikleri sıcacık sarıp iyileştirir!'
+            }
+        ];
+        let selectedToolId = null;
+        let matchedToolIds = new Set();
+
+        function initToolMatchGame() {
+            selectedToolId = null;
+            matchedToolIds.clear();
+            document.getElementById('tool-match-score').innerText = `0 / ${healthToolsData.length} Eşleşti`;
+            document.getElementById('nurse-speech-text').innerText = `Haydi ${heroNickname}! Sol taraftan bir alet seç, sağdan açıklamasını bul!`;
+
+            const toolsList = document.getElementById('match-tools-list');
+            const descsList = document.getElementById('match-descs-list');
+            toolsList.innerHTML = '';
+            descsList.innerHTML = '';
+
+            const shuffledTools = [...healthToolsData].sort(() => Math.random() - 0.5);
+            const shuffledDescs = [...healthToolsData].sort(() => Math.random() - 0.5);
+
+            shuffledTools.forEach(item => {
+                const btn = document.createElement('button');
+                btn.id = `tool-btn-${item.id}`;
+                btn.className = 'w-full p-3.5 rounded-2xl bg-slate-50 hover:bg-rose-50 border-2 border-slate-200 text-left transition flex items-center gap-3 font-bold text-slate-800 text-sm';
+                btn.innerHTML = `<span class="text-3xl">${item.emoji}</span><span>${item.name}</span>`;
+                btn.onclick = () => selectMatchTool(item.id);
+                toolsList.appendChild(btn);
+            });
+
+            shuffledDescs.forEach(item => {
+                const btn = document.createElement('button');
+                btn.id = `desc-btn-${item.id}`;
+                btn.className = 'w-full p-3 rounded-2xl bg-slate-50 hover:bg-sky-50 border-2 border-slate-200 text-left transition text-xs text-slate-600 font-semibold leading-snug min-h-[64px] flex items-center';
+                btn.innerText = item.desc;
+                btn.onclick = () => selectMatchDesc(item.id);
+                descsList.appendChild(btn);
+            });
+        }
+
+        function selectMatchTool(id) {
+            if (matchedToolIds.has(id)) return;
+            selectedToolId = id;
+
+            healthToolsData.forEach(t => {
+                if (!matchedToolIds.has(t.id)) {
+                    const el = document.getElementById(`tool-btn-${t.id}`);
+                    if (el) {
+                        el.classList.remove('border-rose-500', 'bg-rose-100', 'scale-[1.02]');
+                        el.classList.add('border-slate-200', 'bg-slate-50');
+                    }
+                }
+            });
+
+            const activeEl = document.getElementById(`tool-btn-${id}`);
+            if (activeEl) {
+                activeEl.classList.remove('border-slate-200', 'bg-slate-50');
+                activeEl.classList.add('border-rose-500', 'bg-rose-100', 'scale-[1.02]');
+            }
+
+            const toolObj = healthToolsData.find(t => t.id === id);
+            document.getElementById('nurse-speech-text').innerText = `"${toolObj.name}" seçildi! Şimdi sağ taraftan ne işe yaradığını bul!`;
+        }
+
+        function selectMatchDesc(descId) {
+            if (matchedToolIds.has(descId)) return;
+
+            if (!selectedToolId) {
+                document.getElementById('nurse-speech-text').innerText = 'Önce sol taraftan bir sağlık aletine dokunmalısın! 👈';
+                return;
+            }
+
+            const descEl = document.getElementById(`desc-btn-${descId}`);
+            const toolEl = document.getElementById(`tool-btn-${selectedToolId}`);
+
+            if (selectedToolId === descId) {
+                // Correct Match
+                matchedToolIds.add(descId);
+                selectedToolId = null;
+
+                toolEl.className = 'w-full p-3.5 rounded-2xl bg-emerald-100 border-2 border-emerald-400 text-left flex items-center justify-between font-bold text-emerald-900 text-sm opacity-90 cursor-default';
+                toolEl.innerHTML += '<span>✅</span>';
+
+                descEl.className = 'w-full p-3 rounded-2xl bg-emerald-100 border-2 border-emerald-400 text-left text-xs text-emerald-900 font-bold leading-snug min-h-[64px] flex items-center justify-between gap-2 cursor-default';
+                descEl.innerHTML = `<span>${descEl.innerText}</span><span>✅</span>`;
+
+                document.getElementById('tool-match-score').innerText = `${matchedToolIds.size} / ${healthToolsData.length} Eşleşti`;
+
+                if (matchedToolIds.size === healthToolsData.length) {
+                    document.getElementById('nurse-speech-text').innerText = `Muhteşemsin ${heroNickname}! Tüm sağlık aletlerinin süper güçlerini doğru eşleştirdin! 🏆🎉`;
+                    unlockBadge('tools');
+                } else {
+                    document.getElementById('nurse-speech-text').innerText = `Harika eşleştirme ${heroNickname}! Sıradaki aleti seçebilirsin! 🌟`;
+                }
+            } else {
+                // Wrong Match Feedback
+                descEl.classList.add('border-amber-400', 'bg-amber-50');
+                document.getElementById('nurse-speech-text').innerText = 'Çok yaklaştın! İpucunu tekrar okuyup başka bir açıklama dene! 💡';
+                setTimeout(() => {
+                    if (!matchedToolIds.has(descId)) {
+                        descEl.classList.remove('border-amber-400', 'bg-amber-50');
+                    }
+                }, 800);
+            }
+        }
+
+        /* --- CELEBRATION MODAL --- */
+        function showCelebration(emoji, title, text) {
+            const modal = document.getElementById('celebration-modal');
+            document.getElementById('celebration-emoji').textContent = emoji;
+            document.getElementById('celebration-title').textContent = title;
+            document.getElementById('celebration-text').textContent = text;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.getElementById('celebration-ok').focus();
+        }
+
+        function closeCelebration() {
+            const modal = document.getElementById('celebration-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('celebration-modal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeCelebration();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeCelebration();
+        });
+
+        /* --- GERM GAME LOGIC --- */
+        let germScore = 0;
+        let germTimer = null;
+        let germEndTimer = null;
+
+        function clearGermTimers() {
+            if (germTimer) { clearInterval(germTimer); germTimer = null; }
+            if (germEndTimer) { clearTimeout(germEndTimer); germEndTimer = null; }
+        }
+
+        function startGermGame() {
+            clearGermTimers();
+            germScore = 0;
+            document.getElementById('germ-score').innerText = '0';
+            const arena = document.getElementById('germ-arena');
+            arena.innerHTML = '';
+
+            germTimer = setInterval(spawnGerm, 800);
+            germEndTimer = setTimeout(() => {
+                clearGermTimers();
+                showCelebration('🧼', 'Tebrikler!', `Toplam ${germScore} mikrop temizledin!`);
+                if (germScore >= 3) unlockBadge('germs');
+            }, 15000);
+        }
+
+        function spawnGerm() {
+            const arena = document.getElementById('germ-arena');
+            const germ = document.createElement('div');
+            const germEmojis = ['👾', '🦠', '🧫', '👹'];
+            const randomEmoji = germEmojis[Math.floor(Math.random() * germEmojis.length)];
+
+            germ.className = 'absolute p-2 text-4xl cursor-pointer [@media(hover:hover)]:hover:scale-125 transition-transform animate-bounce';
+            germ.style.left = `${5 + Math.random() * 75}%`;
+            germ.style.top = `${5 + Math.random() * 70}%`;
+            germ.innerText = randomEmoji;
+
+            germ.onclick = () => {
+                germScore++;
+                document.getElementById('germ-score').innerText = germScore;
+                germ.innerText = '🫧';
+                setTimeout(() => germ.remove(), 200);
+            };
+
+            arena.appendChild(germ);
+            setTimeout(() => { if (germ.parentNode) germ.remove(); }, 2000);
+        }
+
+        function resetGermGame() {
+            clearGermTimers();
+            document.getElementById('germ-arena').innerHTML = `
+                <div id="germ-welcome" class="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+                    <span class="text-6xl mb-3">🧼</span>
+                    <h3 class="font-bold text-slate-700 text-lg">Mikrop Temizleme Operasyonu</h3>
+                    <p class="text-xs text-slate-500 max-w-sm mt-1">Başla butonuna tıkla, 15 saniyede toplayabildiğin kadar mikrobu sabunla yok et!</p>
+                    <button onclick="startGermGame()" class="mt-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-3 rounded-2xl text-sm shadow-md transition transform active:scale-95">
+                        Oyunu Başlat 🚀
+                    </button>
+                </div>
+            `;
+        }
+
+        /* --- HOSPITAL CARD MATCHING GAME --- */
+        const cardIcons = ['🩺', '💉', '🩹', '🌡️', '🚑', '💊'];
+        let cardsFlipped = [];
+        let matchedPairs = 0;
+
+        function initCardGame() {
+            const grid = document.getElementById('card-grid');
+            grid.innerHTML = '';
+            matchedPairs = 0;
+            cardsFlipped = [];
+
+            const deck = [...cardIcons, ...cardIcons].sort(() => Math.random() - 0.5);
+
+            deck.forEach((icon) => {
+                const card = document.createElement('div');
+                card.className = 'memory-card aspect-square rounded-2xl cursor-pointer';
+                card.dataset.icon = icon;
+                card.innerHTML = `
+                    <div class="memory-card-inner relative w-full h-full text-center rounded-2xl shadow-md border-2 border-slate-200">
+                        <div class="card-front absolute inset-0 bg-sky-400 text-white rounded-2xl flex items-center justify-center text-2xl font-bold">❓</div>
+                        <div class="card-back absolute inset-0 bg-white rounded-2xl flex items-center justify-center text-4xl border-2 border-sky-300">${icon}</div>
+                    </div>
+                `;
+                card.onclick = () => flipCard(card);
+                grid.appendChild(card);
+            });
+        }
+
+        function flipCard(card) {
+            if (cardsFlipped.length >= 2 || card.classList.contains('flipped')) return;
+
+            card.classList.add('flipped');
+            cardsFlipped.push(card);
+
+            if (cardsFlipped.length === 2) {
+                const [c1, c2] = cardsFlipped;
+                if (c1.dataset.icon === c2.dataset.icon) {
+                    matchedPairs++;
+                    cardsFlipped = [];
+                    if (matchedPairs === cardIcons.length) {
+                        unlockBadge('cards');
+                        setTimeout(() => showCelebration('🏆', 'Harika!', 'Tüm sağlık kartlarını eşleştirdin!'), 300);
+                    }
+                } else {
+                    setTimeout(() => {
+                        c1.classList.remove('flipped');
+                        c2.classList.remove('flipped');
+                        cardsFlipped = [];
+                    }, 1000);
+                }
+            }
+        }
+
+        /* --- CANVAS LOGIC --- */
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let currentTool = 'pen';
+        let currentColor = '#f43f5e';
+        let selectedStamp = null;
+
+        let hue = 0;
+
+        // Çizimin tamamı ekrandan bağımsız, sabit boyutlu (4:3) bir offscreen canvas'ta tutulur.
+        // Görünen canvas sadece bunun ölçeklenmiş bir görüntüsüdür.
+        const ART_W = 2048, ART_H = 1536;
+        const art = document.createElement('canvas');
+        art.width = ART_W;
+        art.height = ART_H;
+        const artCtx = art.getContext('2d');
+        let viewScale = 1;   // 1 offscreen pikseli = viewScale CSS pikseli
+        let viewOffX = 0;    // offscreen resminin görünen canvas içindeki sol/üst boşluğu (CSS px)
+        let viewOffY = 0;
+        let viewDpr = 1;
+
+        artCtx.fillStyle = '#ffffff';
+        artCtx.fillRect(0, 0, ART_W, ART_H);
+
+        function renderView() {
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(art, 0, 0, ART_W, ART_H,
+                viewOffX * viewDpr, viewOffY * viewDpr,
+                ART_W * viewScale * viewDpr, ART_H * viewScale * viewDpr);
+            ctx.restore();
+        }
+
+        function fillCanvasWhite() {
+            artCtx.save();
+            artCtx.setTransform(1, 0, 0, 1, 0, 0);
+            artCtx.shadowBlur = 0;
+            artCtx.fillStyle = '#ffffff';
+            artCtx.fillRect(0, 0, ART_W, ART_H);
+            artCtx.restore();
+            renderView();
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            if (!container) return;
+            const dpr = window.devicePixelRatio || 1;
+            const cssW = container.clientWidth;
+            const cssH = container.clientHeight;
+            const newW = Math.round(cssW * dpr);
+            const newH = Math.round(cssH * dpr);
+            // Sekme gizliyken (boyut 0) veya boyut değişmediyse hiçbir şey yapma
+            if (!newW || !newH) return;
+            if (canvas.width === newW && canvas.height === newH) return;
+
+            canvas.width = newW;
+            canvas.height = newH;
+            viewDpr = dpr;
+            viewScale = Math.min(cssW / ART_W, cssH / ART_H);
+            viewOffX = (cssW - ART_W * viewScale) / 2;
+            viewOffY = (cssH - ART_H * viewScale) / 2;
+            renderView();
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            // Çizim alanının dışına (kenar boşluklarına) mürekkep taşmasın
+            ctx.beginPath();
+            ctx.rect(viewOffX, viewOffY, ART_W * viewScale, ART_H * viewScale);
+            ctx.clip();
+            ctx.beginPath();
+        }
+
+        const TOOL_ON = ['border-pink-400', 'bg-pink-50', 'text-pink-700'];
+        const TOOL_OFF = ['border-transparent', 'bg-slate-50', 'text-slate-700'];
+
+        function paintToolButtons(activeName) {
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.remove(...TOOL_ON, ...TOOL_OFF);
+                btn.classList.add(...(btn.id === `tool-${activeName}` ? TOOL_ON : TOOL_OFF));
+            });
+        }
+
+        function setTool(tool) {
+            currentTool = tool;
+            selectedStamp = null;
+            paintToolButtons(tool);
+        }
+
+        const COLOR_RING = {
+            '#f43f5e': 'ring-rose-300',
+            '#3b82f6': 'ring-blue-300',
+            '#10b981': 'ring-emerald-300',
+            '#f59e0b': 'ring-amber-300',
+            '#8b5cf6': 'ring-purple-300'
+        };
+
+        function setColor(hex) {
+            currentColor = hex;
+            if (currentTool === 'eraser' || currentTool === 'stamp') setTool('pen');
+            document.querySelectorAll('[data-color]').forEach(btn => {
+                const ringClass = COLOR_RING[btn.dataset.color];
+                btn.classList.remove('ring-2', ringClass, 'ring-4', 'ring-slate-800');
+                if (btn.dataset.color === hex) {
+                    btn.classList.add('ring-4', 'ring-slate-800');
+                } else {
+                    btn.classList.add('ring-2', ringClass);
+                }
+            });
+        }
+
+        function setStamp(emoji) {
+            selectedStamp = emoji;
+            currentTool = 'stamp';
+            paintToolButtons(null);
+        }
+
+        let activePointerId = null;
+
+        // Ekran (CSS px) ve offscreen koordinatları
+        function pointFromEvent(e) {
+            const rect = canvas.getBoundingClientRect();
+            const vx = e.clientX - rect.left;
+            const vy = e.clientY - rect.top;
+            return { vx, vy, ax: (vx - viewOffX) / viewScale, ay: (vy - viewOffY) / viewScale };
+        }
+
+        function startDrawing(e) {
+            if (isDrawing) return;
+            canvas.setPointerCapture(e.pointerId);
+            const p = pointFromEvent(e);
+
+            if (currentTool === 'stamp' && selectedStamp) {
+                artCtx.save();
+                artCtx.shadowBlur = 0;
+                artCtx.font = `${36 / viewScale}px serif`;
+                artCtx.fillText(selectedStamp, p.ax, p.ay);
+                artCtx.restore();
+                renderView();
+                unlockBadge('artist');
+                return;
+            }
+
+            isDrawing = true;
+            activePointerId = e.pointerId;
+            artCtx.beginPath();
+            artCtx.moveTo(p.ax, p.ay);
+            ctx.beginPath();
+            ctx.moveTo(p.vx, p.vy);
+            unlockBadge('artist');
+        }
+
+        function draw(e) {
+            if (!isDrawing || e.pointerId !== activePointerId) return;
+            const p = pointFromEvent(e);
+
+            let strokeColor;
+            if (currentTool === 'eraser') {
+                strokeColor = '#ffffff';
+            } else if (currentTool === 'rainbow') {
+                strokeColor = `hsl(${hue}, 90%, 60%)`;
+                hue += 5;
+            } else {
+                strokeColor = currentColor;
+            }
+            const glow = currentTool === 'glow';
+
+            // Aynı parçayı hem ekrandaki canvas'a hem offscreen canvas'a çiz.
+            // Offscreen'de kalınlık/parlama ölçeklenir ki ekranda aynı görünsün.
+            [
+                { c: ctx, x: p.vx, y: p.vy, width: 10, blur: 15 },
+                { c: artCtx, x: p.ax, y: p.ay, width: 10 / viewScale, blur: 15 / (viewScale * viewDpr) }
+            ].forEach(t => {
+                t.c.lineWidth = t.width;
+                t.c.lineCap = 'round';
+                t.c.strokeStyle = strokeColor;
+                if (glow) {
+                    t.c.shadowBlur = t.blur;
+                    t.c.shadowColor = currentColor;
+                } else {
+                    t.c.shadowBlur = 0;
+                }
+                t.c.lineTo(t.x, t.y);
+                t.c.stroke();
+                // Her çağrıda yalnızca son parçayı boya (aksi halde tüm yol yeni renkle yeniden boyanır)
+                t.c.beginPath();
+                t.c.moveTo(t.x, t.y);
+            });
+        }
+
+        function stopDrawing(e) {
+            if (e && activePointerId !== null && e.pointerId !== activePointerId) return;
+            isDrawing = false;
+            activePointerId = null;
+        }
+
+        canvas.addEventListener('pointerdown', startDrawing);
+        canvas.addEventListener('pointermove', draw);
+        canvas.addEventListener('pointerup', stopDrawing);
+        canvas.addEventListener('pointercancel', stopDrawing);
+
+        window.addEventListener('resize', () => {
+            if (currentTab === 'canvas') resizeCanvas();
+        });
+
+        function clearCanvas() { fillCanvasWhite(); }
+
+        function downloadCanvas() {
+            const link = document.createElement('a');
+            link.download = 'sihirli-resim.png';
+            link.href = art.toDataURL();
+            link.click();
+        }
+
+        /* --- DYNAMIC CREATIVE STORY GENERATOR --- */
+        // Türkçe iyelik (tamlayan) eki: ses uyumu + kaynaştırma "n". Son kelimeye göre çalışır.
+        function turkishGenitive(name) {
+            const full = name.trim();
+            const lastWord = full.split(/\s+/).pop().toLocaleLowerCase('tr-TR');
+            const vowels = 'aıeioöuü';
+            let lastVowel = null;
+            for (const ch of lastWord) {
+                if (vowels.includes(ch)) lastVowel = ch;
+            }
+            let suffix = 'in';
+            if (lastVowel === 'a' || lastVowel === 'ı') suffix = 'ın';
+            else if (lastVowel === 'e' || lastVowel === 'i') suffix = 'in';
+            else if (lastVowel === 'o' || lastVowel === 'u') suffix = 'un';
+            else if (lastVowel === 'ö' || lastVowel === 'ü') suffix = 'ün';
+            const endsWithVowel = vowels.includes(lastWord.slice(-1));
+            return `${full}'${endsWithVowel ? 'n' : ''}${suffix}`;
+        }
+
+        // Kullanıcı girdisini innerHTML'e koymadan önce HTML entity'lerine çevirir.
+        function escapeHTML(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function generateDynamicStory() {
+            const hero = document.getElementById('story-hero').value.trim() || heroNickname;
+            const safeHero = escapeHTML(hero);
+            const companion = document.getElementById('story-companion').value;
+            const world = document.getElementById('story-world').value;
+
+            document.getElementById('story-title').innerText = `✨ ${turkishGenitive(hero)} ${world} Macerası`;
+
+            document.getElementById('story-content').innerHTML = `
+                <div class="space-y-3">
+                    <p>Bir zamanlar, <strong>${world}</strong> denilen büyülü bir diyarda <strong>${safeHero}</strong> adında yürekli bir çocuk yaşarmış.</p>
+
+                    <p>Bir gün <strong>${safeHero}</strong>, en yakın dostu <strong>${companion}</strong> ile birlikte efsanevi <strong>Gökkuşağı Kristali</strong>'ni bulmak için yola çıkmış. Kristal, dokunduğu herkese neşe ve güç veriyormuş!</p>
+
+                    <p>Yolda karşılarına mızmız bir bulut çıkmış ve yollarını kapatmış. Ama <strong>${safeHero}</strong> hiç korkmamış; derin bir nefes alıp buluta en güzel gülümsemesini göndermiş. Bulut öyle mutlu olmuş ki yağmur yerine şeker gibi parlayan yıldızlar yağdırmaya başlamış!</p>
+
+                    <p>Sonunda Gökkuşağı Kristali'ni bulduklarında <strong>${companion}</strong> neşeli kahkahalarıyla etrafa yıldız tozları saçarken, <strong>${safeHero}</strong>, dostluğu ve cesareti sayesinde tüm evrenin en sevilen yıldızı ilan edilmiş! 🏆✨</p>
+                </div>
+            `;
+        }
+
+        function unlockBadge(badgeId) {
+            if (!unlockedBadges.has(badgeId)) {
+                unlockedBadges.add(badgeId);
+                document.getElementById('badge-count').innerText = unlockedBadges.size;
+                const el = document.getElementById(`badge-${badgeId}`);
+                if (el) el.classList.remove('opacity-40', 'grayscale');
+            }
+        }
+
+        /* --- EMOTION SELECTION LOGIC --- */
+        function selectEmotion(type, title, emoji, desc) {
+            document.getElementById('emotion-emoji').innerText = emoji;
+            document.getElementById('emotion-title').innerText = `${heroNickname}: ${title}`;
+            document.getElementById('emotion-desc').innerText = desc;
+            const emotionLabels = { happy: 'harika', brave: 'cesur', tired: 'yorgun', worried: 'endişeli', creative: 'yaratıcı', calm: 'sakin' };
+            const feeling = emotionLabels[type] || title.replace(/!/g, '').trim().toLocaleLowerCase('tr-TR');
+            document.getElementById('mascot-text').innerText = `"${heroNickname} bugün kendini ${feeling} hissediyor! Yanındayız."`;
+            unlockBadge('emotion');
+        }
+
+        /* --- BREATHING EXERCISE LOGIC --- */
+        let isBreathing = false;
+        let breathInterval = null;
+
+        function toggleBreathing() {
+            if (isBreathing) {
+                stopBreathing();
+            } else {
+                startBreathing();
+            }
+        }
+
+        function startBreathing() {
+            isBreathing = true;
+            const btn = document.getElementById('btn-breath-start');
+            const balloon = document.getElementById('breath-balloon');
+            const inst = document.getElementById('breath-instruction');
+            const sub = document.getElementById('breath-subtext');
+
+            btn.innerText = 'Durdur ⏹️';
+            let step = 0;
+
+            const runCycle = () => {
+                if (!isBreathing) return;
+                if (step === 0) {
+                    balloon.style.transform = 'scale(1.65)';
+                    balloon.style.backgroundColor = '#06b6d4';
+                    inst.innerText = 'Nefes Al... 🌬️';
+                    sub.innerText = `Harika ${heroNickname}, burnundan yavaşça derin bir nefes al ve balonu büyüt!`;
+                } else if (step === 1) {
+                    inst.innerText = 'Tut... ✨';
+                    sub.innerText = 'İçindeki sihirli enerjiyi hisset...';
+                } else {
+                    balloon.style.transform = 'scale(1)';
+                    balloon.style.backgroundColor = '#38bdf8';
+                    inst.innerText = 'Yavaşça Üfle... 🎈';
+                    sub.innerText = 'Ağzından yavaşça üfle ve tüm yorgunluğu uçur!';
+                    unlockBadge('breath');
+                }
+                step = (step + 1) % 3;
+            };
+
+            runCycle();
+            breathInterval = setInterval(runCycle, 4000);
+        }
+
+        function stopBreathing() {
+            isBreathing = false;
+            if (breathInterval) clearInterval(breathInterval);
+            const btn = document.getElementById('btn-breath-start');
+            const balloon = document.getElementById('breath-balloon');
+            const inst = document.getElementById('breath-instruction');
+            if (btn) btn.innerText = 'Egzersizi Başlat 🌬️';
+            if (balloon) balloon.style.transform = 'scale(1)';
+            if (inst) inst.innerText = 'Hazır mısın?';
+        }
+
+        /* --- XYLOPHONE & WEB AUDIO API --- */
+        let audioCtx = null;
+        let userMelody = [];
+
+        function playNote(freq, noteName, btnEl, isReplay = false) {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.7);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.7);
+
+                if (btnEl) {
+                    btnEl.classList.add('ring-4', 'ring-white', 'scale-95');
+                    setTimeout(() => btnEl.classList.remove('ring-4', 'ring-white', 'scale-95'), 180);
+                }
+
+                if (!isReplay) {
+                    userMelody.push({ freq, noteName });
+                    document.getElementById('recorded-count').innerText = userMelody.length;
+                    if (userMelody.length >= 4) unlockBadge('music');
+                }
+            } catch (e) {
+                console.error('Ses çalınamadı:', e);
+            }
+        }
+
+        function replayUserMelody() {
+            if (userMelody.length === 0) return;
+            userMelody.forEach((n, idx) => {
+                setTimeout(() => playNote(n.freq, n.noteName, null, true), idx * 400);
+            });
+        }
+
+        function clearUserMelody() {
+            userMelody = [];
+            document.getElementById('recorded-count').innerText = '0';
+        }
+
+        function playSampleSong(type) {
+            const notes = [261.63, 261.63, 392.00, 392.00, 440.00, 440.00, 392.00];
+            notes.forEach((freq, idx) => {
+                setTimeout(() => playNote(freq, '', null, true), idx * 450);
+            });
+            unlockBadge('music');
+        }
+
+        /* --- WISH & GRATITUDE JAR LOGIC --- */
+        function fillWish(text) {
+            document.getElementById('wish-input').value = text;
+        }
+
+        function addWishStar() {
+            const input = document.getElementById('wish-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const container = document.getElementById('wish-jar-container');
+            const starBadge = document.createElement('div');
+            const icons = ['🌟', '✨', '💫', '🌠', '💛'];
+            const icon = icons[Math.floor(Math.random() * icons.length)];
+
+            starBadge.className = 'bg-amber-300/20 backdrop-blur-md border border-amber-300/50 text-amber-100 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg animate-float break-words max-w-full';
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'text-lg';
+            iconSpan.textContent = icon;
+            const textSpan = document.createElement('span');
+            textSpan.className = 'min-w-0';
+            textSpan.textContent = text;
+            starBadge.append(iconSpan, textSpan);
+
+            container.appendChild(starBadge);
+            input.value = '';
+            unlockBadge('wishes');
+        }
+
+        window.addEventListener('load', () => {
+            lucide.createIcons();
+            resizeCanvas();
+            setColor(currentColor);
+        });
+    </script>
+</body>
+</html>
